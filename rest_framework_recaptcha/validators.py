@@ -1,11 +1,9 @@
 import json
 
+from django.core.exceptions import ImproperlyConfigured
+from django.utils.translation import gettext_lazy as _
 from ipware import get_client_ip
 from rest_framework import serializers
-
-from django.core.exceptions import ImproperlyConfigured
-from django.utils.translation import ugettext_lazy as _
-
 from rest_framework_recaptcha.compat import urlencode, urlopen
 from rest_framework_recaptcha.conf import settings
 
@@ -13,9 +11,7 @@ _DEFAULT_ERROR_CODE = "bad-request"
 
 _ERROR_MESSAGES = {
     _DEFAULT_ERROR_CODE: _("The request is invalid or malformed."),
-    "invalid-input-response": _(
-        "The response parameter is invalid or malformed."
-    ),
+    "invalid-input-response": _("The response parameter is invalid or malformed."),
     "invalid-input-secret": _("The secret parameter is invalid or malformed."),
     "missing-input-response": _("The response parameter is missing."),
     "missing-input-secret": _("The secret parameter is missing."),
@@ -35,9 +31,7 @@ class ReCaptchaValidator(object):
         Initializes the validator with verify API endpoint and reCAPTCHA
         application's secret key.
         """
-        self._api_url = getattr(
-            settings, "DRF_RECAPTCHA_VERIFY_ENDPOINT", None
-        )
+        self._api_url = getattr(settings, "DRF_RECAPTCHA_VERIFY_ENDPOINT", None)
         self._secret_key = getattr(settings, "DRF_RECAPTCHA_SECRET_KEY", None)
         self._client_ip = None
 
@@ -60,12 +54,8 @@ class ReCaptchaValidator(object):
         if not response.get("success", False):
             error_codes = response.get("error-codes", [])
             if error_codes and error_codes[0] in self._error_messages:
-                raise serializers.ValidationError(
-                    self._error_messages[error_codes[0]]
-                )
-            raise serializers.ValidationError(
-                self._error_messages[_DEFAULT_ERROR_CODE]
-            )
+                raise serializers.ValidationError(self._error_messages[error_codes[0]])
+            raise serializers.ValidationError(self._error_messages[_DEFAULT_ERROR_CODE])
         return value
 
     def set_context(self, serializer_field):
@@ -74,9 +64,7 @@ class ReCaptchaValidator(object):
         :param serializer_field: reCAPTCHA field instance
         """
         try:
-            self._client_ip, _ = get_client_ip(
-                serializer_field.context.get("request")
-            )
+            self._client_ip, _ = get_client_ip(serializer_field.context.get("request"))
         except AttributeError:
             pass
 
@@ -96,6 +84,4 @@ class ReCaptchaValidator(object):
             with urlopen(self._api_url, data) as handler:
                 return json.loads(handler.read().decode("utf-8"))
         except Exception:
-            raise serializers.ValidationError(
-                self._error_messages[_DEFAULT_ERROR_CODE]
-            )
+            raise serializers.ValidationError(self._error_messages[_DEFAULT_ERROR_CODE])
